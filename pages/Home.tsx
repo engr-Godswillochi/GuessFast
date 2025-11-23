@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { startRun, createTournament, getProfile } from '../services/api';
+import { API_URL } from '../constants';
 import { connectWallet, checkBalance, approveCUSD, getContract, waitForTransactionConfirmation } from '../services/minipay';
 import Leaderboard from '../components/Leaderboard';
 import TournamentList from '../components/TournamentList';
@@ -43,7 +44,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       // We need a new endpoint or just filter from the list if we had it.
       // Since we don't have the list loaded yet, let's fetch it specifically or just fetch all and find it.
       // For simplicity, let's fetch all and find it.
-      fetch('http://localhost:3000/api/tournaments')
+      fetch(`${API_URL}/tournaments`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -70,7 +71,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   // Fetch tournament details when selected
   useEffect(() => {
     if (selectedTournament && address) {
-      fetch(`http://localhost:3000/api/tournaments/${selectedTournament.id}/leaderboard`)
+      fetch(`${API_URL}/tournaments/${selectedTournament.id}/leaderboard`)
         .then(res => res.json())
         .then(data => {
           console.log("[Home] Received tournament leaderboard:", data);
@@ -83,7 +84,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
 
   // Fetch Global Leaderboard
   useEffect(() => {
-    fetch('http://localhost:3000/api/leaderboard')
+    fetch(`${API_URL}/leaderboard`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setGlobalLeaderboard(data);
@@ -122,7 +123,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       console.log("Transaction confirmed! Registering with backend...");
 
       // 2. Call Backend to register
-      await fetch(`http://localhost:3000/api/tournaments/${selectedTournament.id}/join`, {
+      await fetch(`${API_URL}/tournaments/${selectedTournament.id}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: address })

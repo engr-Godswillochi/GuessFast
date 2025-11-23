@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getContract, waitForTransactionConfirmation } from '../services/minipay';
+import { API_URL } from '../constants';
 
 interface CreateTournamentProps {
     onBack: () => void;
@@ -48,7 +49,7 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
             const paddedDecimal = decimal.padEnd(18, "0");
             const entryFeeWei = (whole + paddedDecimal).replace(/^0+/, "") || "0";
             const endTime = Date.now() + (parseInt(duration) * 60 * 1000);
-            await fetch('http://localhost:3000/api/tournaments', {
+            await fetch(`${API_URL}/tournaments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

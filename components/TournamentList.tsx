@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_URL } from '../constants';
 
 interface Tournament {
     id: number;
@@ -16,7 +17,7 @@ const TournamentList: React.FC<TournamentListProps> = ({ onSelect }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:3000/api/tournaments')
+        fetch(`${API_URL}/tournaments`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
