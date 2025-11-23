@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GuessFast — Solo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            arcane: ['Orbitron', 'sans-serif'],
+            tech: ['Poppins', 'sans-serif'],
+          },
+          colors: {
+            arcane: {
+              bg: '#0b0b15',
+              surface: '#13132b',
+              primary: '#00f3ff', // Neon Cyan
+              accent: '#9d4edd',  // Deep Purple
+              gold: '#ffd700',
+              danger: '#ff0055'
+            },
+            celo: {
+              primary: '#35D07F', // Keep for legacy/brand
+              dark: '#1E293B',
+              surface: '#334155'
+            }
+          },
+          boxShadow: {
+            'neon': '0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3)',
+            'neon-purple': '0 0 10px rgba(157, 78, 221, 0.5), 0 0 20px rgba(157, 78, 221, 0.3)',
+          },
+          animation: {
+            'pop': 'pop 0.1s ease-in-out',
+            'shake': 'shake 0.5s linear',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'float': 'float 3s ease-in-out infinite',
+          },
+          keyframes: {
+            pop: {
+              '0%': { transform: 'scale(0.95)' },
+              '50%': { transform: 'scale(1.1)' },
+              '100%': { transform: 'scale(1)' }
+            },
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+            },
+            glow: {
+              'from': { boxShadow: '0 0 5px rgba(0, 243, 255, 0.2)' },
+              'to': { boxShadow: '0 0 20px rgba(0, 243, 255, 0.6), 0 0 10px rgba(0, 243, 255, 0.4)' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "better-sqlite3": "https://aistudiocdn.com/better-sqlite3@^12.4.5"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex flex-col">
+  <div id="root" class="flex-grow flex flex-col"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

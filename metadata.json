@@ -1,0 +1,5 @@
+{
+  "name": "GuessFast — Solo",
+  "description": "A single-player Wordle-style game with Celo MiniPay integration for staking and leaderboards.",
+  "requestFramePermissions": []
+}
