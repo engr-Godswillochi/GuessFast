@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { startRun, createTournament, getProfile } from '../services/api';
 import { API_URL } from '../constants';
-import { connectWallet, checkBalance, approveCUSD, getContract, waitForTransactionConfirmation } from '../services/minipay';
+import { connectWallet, checkBalance, approveCUSD, getContract, waitForTransactionConfirmation, getWinnings, payoutTournament, claimWinnings } from '../services/minipay';
 import Leaderboard from '../components/Leaderboard';
 import TournamentList from '../components/TournamentList';
 import CreateTournament from '../components/CreateTournament';
@@ -100,11 +100,9 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   // Check claimable winnings when address changes
   useEffect(() => {
     if (address) {
-      getContract().then(contract => {
-        contract.getWinnings(address).then(winnings => {
-          setClaimableWinnings(winnings);
-          console.log("Claimable winnings:", winnings);
-        });
+      getWinnings(address).then(winnings => {
+        setClaimableWinnings(winnings);
+        console.log("Claimable winnings:", winnings);
       }).catch(console.error);
     }
   }, [address]);
