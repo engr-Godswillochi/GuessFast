@@ -455,6 +455,95 @@ export const getContract = async (): Promise<any> => {
         }
       }
       return "";
+    },
+
+    // Payout tournament to winner (called by winner after tournament ends)
+    payoutTournament: async (tournamentId: number, winnerAddress: string): Promise<string | null> => {
+      if (window.ethereum) {
+        try {
+          // Function signature: payout(uint256,address)
+          // Selector: 0x6c19e783
+          const selector = "0x6c19e783";
+          const idHex = tournamentId.toString(16).padStart(64, '0');
+          const addressHex = winnerAddress.toLowerCase().replace('0x', '').padStart(64, '0');
+          const data = selector + idHex + addressHex;
+
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: accounts[0],
+              to: CONTRACT_ADDRESS,
+              data,
+              gas: '0x30d40' // 200,000 gas
+            }]
+          });
+
+          console.log("Payout transaction sent:", txHash);
+          return txHash;
+        } catch (e: any) {
+          console.error("Failed to trigger payout", e);
+          throw e;
+        }
+      }
+      return null;
+    },
+
+    // Claim accumulated winnings
+    claimWinnings: async (): Promise<string | null> => {
+      if (window.ethereum) {
+        try {
+          // Function signature: claimWinnings()
+          // Selector: 0x3f138d4e
+          const data = "0x3f138d4e";
+
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: accounts[0],
+              to: CONTRACT_ADDRESS,
+              data,
+              gas: '0x30d40' // 200,000 gas
+            }]
+          });
+
+          console.log("Claim winnings transaction sent:", txHash);
+          return txHash;
+        } catch (e: any) {
+          console.error("Failed to claim winnings", e);
+          throw e;
+        }
+      }
+      return null;
+    },
+
+    // Get claimable winnings for an address
+    getWinnings: async (address: string): Promise<string> => {
+      if (window.ethereum) {
+        try {
+          // Function signature: winnings(address)
+          // Selector: 0x5bb47808
+          const selector = "0x5bb47808";
+          const addressHex = address.toLowerCase().replace('0x', '').padStart(64, '0');
+          const data = selector + addressHex;
+
+          const result = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ to: CONTRACT_ADDRESS, data }, 'latest']
+          });
+
+          if (!result || result === '0x') return '0';
+
+          // Result is uint256 in wei
+          const winningsWei = BigInt(result);
+          return winningsWei.toString();
+        } catch (e: any) {
+          console.error("Failed to get winnings", e);
+          return '0';
+        }
+      }
+      return '0';
     }
   };
 };
