@@ -4,7 +4,36 @@ import * as db from './db';
 import { getRandomWord, isValidWord } from './words';
 
 const app = express();
-app.use(cors());
+
+// CORS Configuration - Allow production frontend
+const allowedOrigins = [
+  'https://guess-fast.vercel.app',
+  'http://localhost:5173', // Local development
+  'http://localhost:3000'  // Alternative local port
+];
+
+// Add custom origin from environment variable if provided
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
