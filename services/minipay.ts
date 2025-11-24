@@ -397,6 +397,25 @@ export const getContract = async (): Promise<any> => {
         }
       }
       return 0;
+    },
+
+    getOwner: async (): Promise<string> => {
+      if (window.ethereum) {
+        try {
+          const selector = "0x893d20e8"; // owner()
+          const result = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ to: CONTRACT_ADDRESS, data: selector }, 'latest']
+          });
+          if (!result || result === '0x') return "";
+          // Extract address from padded result (last 40 hex chars)
+          return '0x' + result.slice(-40);
+        } catch (e: any) {
+          console.error("Failed to fetch owner", e);
+          return "";
+        }
+      }
+      return "";
     }
   };
 };

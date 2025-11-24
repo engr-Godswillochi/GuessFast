@@ -43,7 +43,8 @@ const TournamentList: React.FC<TournamentListProps> = ({ onSelect }) => {
                 <div className="text-center text-slate-500 font-tech">No active tournaments.</div>
             ) : (
                 tournaments.map(t => {
-                    const isExpired = t.end_time < Date.now();
+                    const isExpired = t.end_time < Math.floor(Date.now() / 1000);
+                    const timeRemaining = Math.max(0, Math.floor((t.end_time - Math.floor(Date.now() / 1000)) / 60));
                     return (
                         <div
                             key={t.id}
@@ -57,7 +58,7 @@ const TournamentList: React.FC<TournamentListProps> = ({ onSelect }) => {
                                         Tournament #{t.id}
                                     </div>
                                     <div className="text-xs text-slate-400 font-tech">
-                                        {isExpired ? `Ended: ${new Date(t.end_time).toLocaleDateString()}` : `Ends in: ${Math.max(0, Math.floor((t.end_time - Date.now()) / 1000 / 60))} mins`}
+                                        {isExpired ? `Ended: ${new Date(t.end_time * 1000).toLocaleDateString()}` : `Ends in: ${timeRemaining} mins`}
                                     </div>
                                 </div>
                                 <div className="text-right">

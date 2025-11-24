@@ -213,14 +213,14 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
                 <div className="flex justify-between text-sm font-tech text-slate-300 mb-4">
                   <span>Entry: <span className="text-arcane-gold">{(parseFloat(selectedTournament.entry_fee) / 10 ** 18).toFixed(2)} CELO</span></span>
                   <span>
-                    {selectedTournament.end_time < Date.now()
+                    {selectedTournament.end_time < Math.floor(Date.now() / 1000)
                       ? <span className="text-red-400">Ended</span>
-                      : `Ends: ${new Date(selectedTournament.end_time).toLocaleTimeString()}`
+                      : `Ends: ${new Date(selectedTournament.end_time * 1000).toLocaleTimeString()}`
                     }
                   </span>
                 </div>
 
-                {selectedTournament.end_time < Date.now() ? (
+                {selectedTournament.end_time < Math.floor(Date.now() / 1000) ? (
                   <div className="w-full py-3 bg-slate-800/50 border border-slate-700 text-slate-400 font-bold rounded text-center font-tech uppercase tracking-widest">
                     Tournament Ended
                   </div>
