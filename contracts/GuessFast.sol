@@ -57,11 +57,17 @@ contract GuessFast {
         emit PlayerJoined(tournamentId, msg.sender);
     }
 
-    function payout(uint256 tournamentId, address winner) external {
+    function payout(uint256 tournamentId, address winner, bytes memory signature) external {
         Tournament storage t = tournaments[tournamentId];
         require(block.timestamp >= t.endTime, "Tournament not ended");
         require(!t.isPaidOut, "Already paid out");
         require(msg.sender == winner, "Only winner can claim");
+
+        // Verify signature
+        bytes32 messageHash = keccak256(abi.encodePacked(tournamentId, winner));
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+        address signer = recoverSigner(ethSignedMessageHash, signature);
+        require(signer == owner, "Invalid signature");
         
         t.winner = winner;
         t.isPaidOut = true;
@@ -72,6 +78,20 @@ contract GuessFast {
         }
 
         emit TournamentEnded(tournamentId, winner, t.prizePool);
+    }
+
+    function recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature) internal pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+        return ecrecover(_ethSignedMessageHash, v, r, s);
+    }
+
+    function splitSignature(bytes memory sig) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "Invalid signature length");
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
     }
 
     function claimWinnings() external {

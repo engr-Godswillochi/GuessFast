@@ -168,39 +168,62 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   const handleClaimPrize = async () => {
     if (!address) return;
     setIsClaiming(true);
-    setError(null);
-
     try {
-      const contract = await getContract();
+      // 1. Get the tournament ID (assuming the user won the last ended tournament they played)
+      // Ideally, we should know WHICH tournament they won.
+      // For now, let's fetch the user's profile to find the winning tournament.
+      const profile = await fetch(`${API_URL}/api/profile/${address}`).then(res => res.json());
+      const winningTournament = profile.history.find((t: any) => t.score > 0); // Simplified check, ideally check status='won' from backend
 
-      // Check if we have winnings to claim
-      const winnings = await contract.getWinnings(address);
-      if (winnings === '0') {
-        setError('No winnings to claim');
+      // Better approach: The backend knows the winner.
+      // We need to know which tournament ID to claim for.
+      // Let's assume for this hackathon demo, we check the most recent winning tournament.
+      if (!winningTournament) {
+        alert("No winning tournament found.");
         setIsClaiming(false);
         return;
       }
 
-      console.log("Claiming winnings:", winnings);
+      const tournamentId = winningTournament.id;
 
-      // Claim the winnings
-      const txHash = await contract.claimWinnings();
-      if (!txHash) {
-        throw new Error("Transaction rejected");
+      // 2. Get Signature from Backend
+      console.log("Requesting payout signature for tournament:", tournamentId);
+      const sigResponse = await fetch(`${API_URL}/api/tournaments/${tournamentId}/payout-signature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: address })
+      });
+
+      if (!sigResponse.ok) {
+        const err = await sigResponse.json();
+        throw new Error(err.error || 'Failed to get signature');
       }
 
-      console.log("Claim transaction sent:", txHash);
-      const confirmed = await waitForTransactionConfirmation(txHash);
+      const { signature } = await sigResponse.json();
+      console.log("Got signature:", signature);
 
-      if (confirmed) {
-        alert(`Successfully claimed ${(BigInt(winnings) / BigInt(10 ** 18)).toString()} CELO!`);
-        // Refresh winnings
-        const newWinnings = await contract.getWinnings(address);
-        setClaimableWinnings(newWinnings);
-      }
-    } catch (err: any) {
-      console.error("Failed to claim prize:", err);
-      setError(err.message || "Failed to claim prize");
+      // 3. Trigger Payout with Signature
+      console.log("Triggering payout on-chain...");
+      const payoutTx = await payoutTournament(tournamentId, address, signature);
+      if (!payoutTx) throw new Error("Payout transaction failed");
+
+      // Wait for payout to be mined (simple delay for demo)
+      await new Promise(r => setTimeout(r, 5000));
+
+      // 4. Claim Winnings
+      console.log("Claiming winnings...");
+      const claimTx = await claimWinnings();
+      if (!claimTx) throw new Error("Claim transaction failed");
+
+      alert("Prize claimed successfully! 🏆");
+
+      // Refresh winnings
+      const winnings = await getWinnings(address);
+      setClaimableWinnings(winnings);
+
+    } catch (e: any) {
+      console.error("Claim failed:", e);
+      alert(`Claim failed: ${e.message}`);
     } finally {
       setIsClaiming(false);
     }

@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import * as db from './db';
 import { getRandomWord, isValidWord } from './words';
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 
@@ -30,11 +34,11 @@ app.use(cors({
     // Allow all Vercel deployment URLs (production and preview)
     // Matches: https://guess-fast.vercel.app and https://guess-fast-*.vercel.app
     if (origin.includes('guess-fast') && origin.endsWith('.vercel.app')) {
-      console.log(`Allowing Vercel deployment: ${origin}`);
+      console.log(`Allowing Vercel deployment: ${origin} `);
       return callback(null, true);
     }
 
-    console.warn(`CORS blocked request from origin: ${origin}`);
+    console.warn(`CORS blocked request from origin: ${origin} `);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -59,23 +63,23 @@ app.post('/api/runs', async (req, res) => {
   try {
     if (tournamentId) {
       const tournament = await db.get('SELECT end_time FROM tournaments WHERE id = ?', [tournamentId]);
-      console.log(`[Start Run] Tournament ${tournamentId} check:`, tournament);
+      console.log(`[Start Run] Tournament ${tournamentId} check: `, tournament);
       if (!tournament) {
         console.log(`[Start Run] Tournament ${tournamentId} not found in database`);
         return res.status(404).json({ error: 'Tournament not found' });
       }
       // tournament.end_time is in seconds, so compare with current time in seconds
       const currentTimeSeconds = Math.floor(Date.now() / 1000);
-      console.log(`[Start Run] Tournament ${tournamentId} - endTime: ${tournament.end_time}, currentTime: ${currentTimeSeconds}, ended: ${tournament.end_time < currentTimeSeconds}`);
+      console.log(`[Start Run] Tournament ${tournamentId} - endTime: ${tournament.end_time}, currentTime: ${currentTimeSeconds}, ended: ${tournament.end_time < currentTimeSeconds} `);
       if (tournament.end_time < currentTimeSeconds) {
         return res.status(400).json({ error: 'Tournament ended' });
       }
     }
 
     const info = await db.run(`
-      INSERT INTO runs (wallet_address, secret_word, start_time, tournament_id) 
-      VALUES (?, ?, ?, ?)
-    `, [walletAddress.toLowerCase(), secretWord, startTime, tournamentId || null]);
+      INSERT INTO runs(wallet_address, secret_word, start_time, tournament_id)
+VALUES(?, ?, ?, ?)
+  `, [walletAddress.toLowerCase(), secretWord, startTime, tournamentId || null]);
 
     res.json({
       runId: info.id,
@@ -104,7 +108,7 @@ app.post('/api/runs/:id/submit', async (req, res) => {
     await db.run(`
       UPDATE runs 
       SET end_time = ?, status = ?, attempts = ?
-      WHERE id = ?
+  WHERE id = ?
     `, [endTime, success ? 'won' : 'lost', attempts, id]);
 
     // If part of a tournament, update participant score
@@ -113,17 +117,17 @@ app.post('/api/runs/:id/submit', async (req, res) => {
       // Simple score: 10000 - (attempts * 100) - (time in seconds)
       const score = 10000 - (attempts * 100) - Math.floor(timeMs / 1000);
 
-      console.log(`[Score Update] Run ${id}, Tournament ${run.tournament_id}, User ${run.wallet_address}`);
-      console.log(`[Score Update] New Score: ${score}, Time: ${timeMs}, Attempts: ${attempts}`);
+      console.log(`[Score Update] Run ${id}, Tournament ${run.tournament_id}, User ${run.wallet_address} `);
+      console.log(`[Score Update] New Score: ${score}, Time: ${timeMs}, Attempts: ${attempts} `);
 
       // Only update if score is better
       const result = await db.run(`
             UPDATE participants 
             SET score = ?, attempts = ?, time_ms = ?
-            WHERE tournament_id = ? AND LOWER(wallet_address) = ? AND score < ?
-        `, [score, attempts, timeMs, run.tournament_id, run.wallet_address.toLowerCase(), score]);
+  WHERE tournament_id = ? AND LOWER(wallet_address) = ? AND score < ?
+    `, [score, attempts, timeMs, run.tournament_id, run.wallet_address.toLowerCase(), score]);
 
-      console.log(`[Score Update] Rows updated: ${result.id}`); // id isn't rows affected in sqlite3 wrapper but let's check logs
+      console.log(`[Score Update] Rows updated: ${result.id} `); // id isn't rows affected in sqlite3 wrapper but let's check logs
     }
 
     res.json({ success: true, timeMs: endTime - run.start_time });
@@ -138,7 +142,7 @@ app.get('/api/leaderboard', async (req, res) => {
   // ... existing implementation ...
   try {
     const rows = await db.all(`
-          SELECT wallet_address, (end_time - start_time) as time_ms, attempts, datetime(start_time/1000, 'unixepoch') as created_at
+          SELECT wallet_address, (end_time - start_time) as time_ms, attempts, datetime(start_time / 1000, 'unixepoch') as created_at
           FROM runs
           WHERE status = 'won'
           ORDER BY time_ms ASC, attempts ASC
@@ -194,16 +198,16 @@ app.get('/api/tournaments/:id/leaderboard', async (req, res) => {
     console.log(`Fetching leaderboard for tournament ${id}`);
     // Query runs directly to show all winning attempts, not just the best one per user
     const rows = await db.all(`
-      SELECT 
-        wallet_address, 
-        (end_time - start_time) as time_ms, 
-        attempts,
-        (10000 - (attempts * 100) - ((end_time - start_time) / 1000)) as score,
-        datetime(start_time/1000, 'unixepoch') as created_at
+      SELECT
+wallet_address,
+  (end_time - start_time) as time_ms,
+  attempts,
+  (10000 - (attempts * 100) - ((end_time - start_time) / 1000)) as score,
+  datetime(start_time / 1000, 'unixepoch') as created_at
       FROM runs 
       WHERE tournament_id = ? AND status = 'won' 
       ORDER BY score DESC
-    `, [id]);
+  `, [id]);
     console.log(`[Leaderboard] Found ${rows.length} rows for tournament ${id}`);
     if (rows.length > 0) console.log('[Leaderboard] First row:', rows[0]);
     res.json(rows);
@@ -212,7 +216,73 @@ app.get('/api/tournaments/:id/leaderboard', async (req, res) => {
   }
 });
 
-// 6. User Profile
+// 6. Get Payout Signature
+app.post('/api/tournaments/:id/payout-signature', async (req, res) => {
+  const { id } = req.params;
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address required' });
+  }
+
+  try {
+    // 1. Verify tournament ended
+    const tournament = await db.get('SELECT end_time FROM tournaments WHERE id = ?', [id]);
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+
+    const currentTimeSeconds = Math.floor(Date.now() / 1000);
+    if (currentTimeSeconds < tournament.end_time) {
+      return res.status(400).json({ error: 'Tournament not ended yet' });
+    }
+
+    // 2. Verify winner
+    // Get the highest score for this tournament
+    const winner = await db.get(`
+      SELECT wallet_address, score 
+      FROM runs 
+      WHERE tournament_id = ? AND status = 'won' 
+      ORDER BY score DESC, time_ms ASC 
+      LIMIT 1
+  `, [id]);
+
+    if (!winner) {
+      return res.status(400).json({ error: 'No winner found for this tournament' });
+    }
+
+    if (winner.wallet_address.toLowerCase() !== walletAddress.toLowerCase()) {
+      return res.status(403).json({ error: 'You are not the winner' });
+    }
+
+    // 3. Generate Signature
+    if (!process.env.OWNER_PRIVATE_KEY) {
+      console.error("OWNER_PRIVATE_KEY not set");
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
+    const wallet = new ethers.Wallet(process.env.OWNER_PRIVATE_KEY);
+
+    // Message to sign: Hash(tournamentId, winnerAddress)
+    // Must match the smart contract logic: keccak256(abi.encodePacked(tournamentId, winner))
+    const messageHash = ethers.solidityPackedKeccak256(
+      ["uint256", "address"],
+      [id, walletAddress]
+    );
+
+    // Sign the binary hash
+    const signature = await wallet.signMessage(ethers.getBytes(messageHash));
+
+    console.log(`[Payout] Generated signature for tournament ${id}, winner ${walletAddress} `);
+    res.json({ signature });
+
+  } catch (err) {
+    console.error("Payout signature error:", err);
+    res.status(500).json({ error: 'Failed to generate signature' });
+  }
+});
+
+// 7. User Profile
 app.get('/api/profile/:walletAddress', async (req, res) => {
   const { walletAddress } = req.params;
   const addr = walletAddress.toLowerCase();
@@ -220,27 +290,27 @@ app.get('/api/profile/:walletAddress', async (req, res) => {
   try {
     // 1. Stats
     const stats = await db.get(`
-      SELECT 
-        COUNT(*) as games_played,
-        SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as games_won
+SELECT
+COUNT(*) as games_played,
+  SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as games_won
       FROM runs
       WHERE lower(wallet_address) = ?
-    `, [addr]);
+  `, [addr]);
 
     // 2. Tournament History
     // We can join participants with tournaments to get details
     const tournaments = await db.all(`
-      SELECT 
-        t.id, 
-        t.entry_fee, 
-        t.end_time, 
-        p.score, 
-        p.attempts,
-        p.time_ms
+      SELECT
+t.id,
+  t.entry_fee,
+  t.end_time,
+  p.score,
+  p.attempts,
+  p.time_ms
       FROM participants p
       JOIN tournaments t ON p.tournament_id = t.id
       WHERE lower(p.wallet_address) = ?
-      ORDER BY t.end_time DESC
+  ORDER BY t.end_time DESC
     `, [addr]);
 
     res.json({

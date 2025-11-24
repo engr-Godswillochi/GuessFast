@@ -458,15 +458,36 @@ export const getContract = async (): Promise<any> => {
     },
 
     // Payout tournament to winner (called by winner after tournament ends)
-    payoutTournament: async (tournamentId: number, winnerAddress: string): Promise<string | null> => {
+    payoutTournament: async (tournamentId: number, winnerAddress: string, signature: string): Promise<string | null> => {
       if (window.ethereum) {
         try {
-          // Function signature: payout(uint256,address)
-          // Selector: 0xbe95e01a
-          const selector = "0xbe95e01a";
+          // Function signature: payout(uint256,address,bytes)
+          // Selector: 0xc5daeac6
+          const selector = "0xc5daeac6";
+
+          // 1. ID (32 bytes)
           const idHex = tournamentId.toString(16).padStart(64, '0');
+
+          // 2. Address (32 bytes)
           const addressHex = winnerAddress.toLowerCase().replace('0x', '').padStart(64, '0');
-          const data = selector + idHex + addressHex;
+
+          // 3. Offset to signature (32 bytes)
+          // 3 static args * 32 bytes = 96 bytes (0x60)
+          // Wait, args are: id, winner, signature_offset. So offset is 0x60.
+          const offsetHex = (96).toString(16).padStart(64, '0');
+
+          // 4. Signature Length (32 bytes)
+          // Signature is 65 bytes (0x41)
+          const sigBytes = signature.replace('0x', '');
+          const sigLength = sigBytes.length / 2;
+          const lengthHex = sigLength.toString(16).padStart(64, '0');
+
+          // 5. Signature Data (padded to 32 bytes)
+          const paddedSig = sigBytes.padEnd(Math.ceil(sigBytes.length / 64) * 64, '0');
+
+          const data = selector + idHex + addressHex + offsetHex + lengthHex + paddedSig;
+
+          console.log("Payout Data:", data);
 
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           const txHash = await window.ethereum.request({
@@ -475,7 +496,7 @@ export const getContract = async (): Promise<any> => {
               from: accounts[0],
               to: CONTRACT_ADDRESS,
               data,
-              gas: '0x30d40' // 200,000 gas
+              gas: '0x493e0' // 300,000 gas (increased for sig verification)
             }]
           });
 

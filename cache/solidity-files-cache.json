@@ -38,8 +38,8 @@
       ]
     },
     "C:\\Users\\HP\\Documents\\devs\\GuessFast\\contracts\\GuessFast.sol": {
-      "lastModificationDate": 1763983305958,
-      "contentHash": "bb1a1235304c2d1d845122f52b4e6300",
+      "lastModificationDate": 1763988537878,
+      "contentHash": "4e8c08abba3e90f892006e166e081929",
       "sourceName": "contracts/GuessFast.sol",
       "solcConfig": {
         "version": "0.8.28",
