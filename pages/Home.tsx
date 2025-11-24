@@ -115,11 +115,16 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
             console.log("Found potential claimable tournaments:", data.claimableIds);
             // Check on-chain status for each
             for (const id of data.claimableIds) {
-              const t = await getTournament(id);
-              if (t && !t.isPaidOut) {
-                console.log("Found unclaimed tournament:", id);
-                setUnclaimedTournamentId(id);
-                break; // Just handle one at a time for simplicity
+              try {
+                const t = await getTournament(id);
+                if (t && !t.isPaidOut) {
+                  console.log("Found unclaimed tournament:", id);
+                  setUnclaimedTournamentId(id);
+                  break; // Just handle one at a time for simplicity
+                }
+              } catch (error) {
+                console.warn(`Tournament ${id} not found on-chain, skipping...`);
+                // Continue to next tournament
               }
             }
           }
