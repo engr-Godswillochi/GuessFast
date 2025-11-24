@@ -36,6 +36,42 @@
       "artifacts": [
         "GuessFast"
       ]
+    },
+    "C:\\Users\\HP\\Documents\\devs\\GuessFast\\contracts\\GuessFast.sol": {
+      "lastModificationDate": 1763975182406,
+      "contentHash": "1e16672584592fdbe4c333fcb7c7808d",
+      "sourceName": "contracts/GuessFast.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "GuessFast"
+      ]
     }
   }
 }

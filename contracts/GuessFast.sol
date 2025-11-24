@@ -32,8 +32,6 @@ contract GuessFast {
     }
 
     function createTournament(uint256 entryFee, uint256 duration) external {
-        require(msg.sender == owner, "Only owner");
-        
         tournamentCount++;
         tournaments[tournamentCount] = Tournament({
             id: tournamentCount,

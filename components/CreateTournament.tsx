@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { getContract, waitForTransactionConfirmation, getConnectedAddress } from '../services/minipay';
+import React, { useState } from 'react';
+import { getContract, waitForTransactionConfirmation } from '../services/minipay';
 import { API_URL } from '../constants';
 
 interface CreateTournamentProps {
@@ -8,37 +8,10 @@ interface CreateTournamentProps {
 }
 
 const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }) => {
-    const [entryFee, setEntryFee] = useState('10');
+    const [entryFee, setEntryFee] = useState('0.01');
     const [duration, setDuration] = useState('60'); // Minutes
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isOwner, setIsOwner] = useState<boolean | null>(null);
-    const [checkingOwner, setCheckingOwner] = useState(true);
-
-    // Check if current user is contract owner
-    useEffect(() => {
-        const checkOwner = async () => {
-            try {
-                const contract = await getContract();
-                const ownerAddress = await contract.getOwner();
-                const currentAddress = await getConnectedAddress();
-
-                console.log("Contract owner:", ownerAddress);
-                console.log("Current address:", currentAddress);
-
-                setIsOwner(
-                    ownerAddress && currentAddress &&
-                    ownerAddress.toLowerCase() === currentAddress.toLowerCase()
-                );
-            } catch (e) {
-                console.error("Failed to check owner:", e);
-                setIsOwner(false);
-            } finally {
-                setCheckingOwner(false);
-            }
-        };
-        checkOwner();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,63 +88,42 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
             <div className="glass-panel p-6 rounded-xl border border-arcane-primary/30">
                 <h2 className="text-2xl font-bold text-white font-arcane mb-6 text-center text-glow">Create Tournament</h2>
 
-                {checkingOwner ? (
-                    <div className="text-center text-arcane-primary animate-pulse py-8">
-                        Checking permissions...
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-sm text-slate-400 font-tech uppercase tracking-wider">Entry Fee (CELO)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={entryFee}
+                            onChange={(e) => setEntryFee(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white font-mono focus:border-arcane-primary focus:outline-none transition-colors"
+                            placeholder="0.01"
+                            required
+                        />
                     </div>
-                ) : !isOwner ? (
-                    <div className="space-y-4">
-                        <div className="bg-arcane-danger/10 border border-arcane-danger/50 rounded-lg p-4 text-center">
-                            <div className="text-arcane-danger font-bold mb-2 font-tech">⚠️ Owner Only</div>
-                            <div className="text-slate-300 text-sm font-tech">
-                                Only the contract owner can create tournaments.
-                                Please connect with the owner wallet to create tournaments.
-                            </div>
-                        </div>
-                        <button
-                            onClick={onBack}
-                            className="w-full py-3 bg-slate-700/50 border border-slate-600 text-slate-300 font-bold rounded hover:bg-slate-700 transition-all font-tech uppercase"
-                        >
-                            Back to List
-                        </button>
+
+                    <div className="space-y-2">
+                        <label className="text-sm text-slate-400 font-tech uppercase tracking-wider">Duration (Minutes)</label>
+                        <input
+                            type="number"
+                            value={duration}
+                            onChange={(e) => setDuration(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded p-3 text-white font-mono focus:border-arcane-primary focus:outline-none transition-colors"
+                            placeholder="60"
+                            required
+                        />
                     </div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-sm text-slate-400 font-tech uppercase tracking-wider">Entry Fee (CELO)</label>
-                            <input
-                                type="number"
-                                value={entryFee}
-                                onChange={(e) => setEntryFee(e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded p-3 text-white font-mono focus:border-arcane-primary focus:outline-none transition-colors"
-                                placeholder="10"
-                                required
-                            />
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm text-slate-400 font-tech uppercase tracking-wider">Duration (Minutes)</label>
-                            <input
-                                type="number"
-                                value={duration}
-                                onChange={(e) => setDuration(e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded p-3 text-white font-mono focus:border-arcane-primary focus:outline-none transition-colors"
-                                placeholder="60"
-                                required
-                            />
-                        </div>
+                    {error && <div className="text-arcane-danger text-sm text-center font-tech">{error}</div>}
 
-                        {error && <div className="text-arcane-danger text-sm text-center font-tech">{error}</div>}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 disabled:opacity-50 font-tech tracking-widest uppercase shadow-neon"
-                        >
-                            {loading ? 'Creating...' : 'Create Tournament'}
-                        </button>
-                    </form>
-                )}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 disabled:opacity-50 font-tech tracking-widest uppercase shadow-neon"
+                    >
+                        {loading ? 'Creating...' : 'Create Tournament'}
+                    </button>
+                </form>
             </div>
         </div>
     );
