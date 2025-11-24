@@ -199,15 +199,15 @@ app.get('/api/tournaments/:id/leaderboard', async (req, res) => {
     // Query runs directly to show all winning attempts, not just the best one per user
     const rows = await db.all(`
       SELECT
-wallet_address,
-  (end_time - start_time) as time_ms,
-  attempts,
-  (10000 - (attempts * 100) - ((end_time - start_time) / 1000)) as score,
-  datetime(start_time / 1000, 'unixepoch') as created_at
+        wallet_address,
+        (end_time - start_time) as time_ms,
+        attempts,
+        (10000 - (attempts * 100) - ((end_time - start_time) / 1000)) as score,
+        datetime(start_time / 1000, 'unixepoch') as created_at
       FROM runs 
       WHERE tournament_id = ? AND status = 'won' 
-      ORDER BY score DESC
-  `, [id]);
+      ORDER BY time_ms ASC, attempts ASC
+    `, [id]);
     console.log(`[Leaderboard] Found ${rows.length} rows for tournament ${id}`);
     if (rows.length > 0) console.log('[Leaderboard] First row:', rows[0]);
     res.json(rows);
@@ -240,12 +240,14 @@ app.post('/api/tournaments/:id/payout-signature', async (req, res) => {
     // 2. Verify winner
     // Get the highest score for this tournament
     const winner = await db.get(`
-      SELECT wallet_address, score 
+      SELECT 
+        wallet_address,
+        (end_time - start_time) as time_ms
       FROM runs 
       WHERE tournament_id = ? AND status = 'won' 
-      ORDER BY score DESC, time_ms ASC 
+      ORDER BY time_ms ASC, attempts ASC 
       LIMIT 1
-  `, [id]);
+    `, [id]);
 
     if (!winner) {
       return res.status(400).json({ error: 'No winner found for this tournament' });
@@ -301,10 +303,12 @@ app.get('/api/user/:walletAddress/claimable-tournaments', async (req, res) => {
     // 2. For each tournament, check if user is the winner
     for (const t of tournaments) {
       const winner = await db.get(`
-        SELECT wallet_address 
+        SELECT 
+          wallet_address,
+          (end_time - start_time) as time_ms
         FROM runs 
         WHERE tournament_id = ? AND status = 'won' 
-        ORDER BY score DESC, time_ms ASC 
+        ORDER BY time_ms ASC, attempts ASC 
         LIMIT 1
       `, [t.id]);
 
