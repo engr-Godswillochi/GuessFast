@@ -108,7 +108,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       }).catch(console.error);
 
       // 2. Check for pending payouts
-      fetch(`${API_URL}/api/user/${address}/claimable-tournaments`)
+      fetch(`${API_URL}/user/${address}/claimable-tournaments`)
         .then(res => res.json())
         .then(async (data) => {
           if (data.claimableIds && data.claimableIds.length > 0) {
@@ -193,7 +193,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
         console.log("Requesting payout signature for tournament:", unclaimedTournamentId);
 
         // 1. Get Signature
-        const sigResponse = await fetch(`${API_URL}/api/tournaments/${unclaimedTournamentId}/payout-signature`, {
+        const sigResponse = await fetch(`${API_URL}/tournaments/${unclaimedTournamentId}/payout-signature`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress: address })
