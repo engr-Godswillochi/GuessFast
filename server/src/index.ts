@@ -27,8 +27,10 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow Vercel preview URLs (pattern: https://guess-fast-*.vercel.app)
-    if (origin.startsWith('https://guess-fast-') && origin.endsWith('.vercel.app')) {
+    // Allow all Vercel deployment URLs (production and preview)
+    // Matches: https://guess-fast.vercel.app and https://guess-fast-*.vercel.app
+    if (origin.includes('guess-fast') && origin.endsWith('.vercel.app')) {
+      console.log(`Allowing Vercel deployment: ${origin}`);
       return callback(null, true);
     }
 
