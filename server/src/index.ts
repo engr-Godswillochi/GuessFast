@@ -282,7 +282,45 @@ app.post('/api/tournaments/:id/payout-signature', async (req, res) => {
   }
 });
 
-// 7. User Profile
+// 7. Get Claimable Tournaments
+app.get('/api/user/:walletAddress/claimable-tournaments', async (req, res) => {
+  const { walletAddress } = req.params;
+  const addr = walletAddress.toLowerCase();
+
+  try {
+    // 1. Find all tournaments the user participated in that have ended
+    const tournaments = await db.all(`
+      SELECT t.id, t.end_time
+      FROM participants p
+      JOIN tournaments t ON p.tournament_id = t.id
+      WHERE lower(p.wallet_address) = ? AND t.end_time < ?
+    `, [addr, Math.floor(Date.now() / 1000)]);
+
+    const claimableIds = [];
+
+    // 2. For each tournament, check if user is the winner
+    for (const t of tournaments) {
+      const winner = await db.get(`
+        SELECT wallet_address 
+        FROM runs 
+        WHERE tournament_id = ? AND status = 'won' 
+        ORDER BY score DESC, time_ms ASC 
+        LIMIT 1
+      `, [t.id]);
+
+      if (winner && winner.wallet_address.toLowerCase() === addr) {
+        claimableIds.push(t.id);
+      }
+    }
+
+    res.json({ claimableIds });
+  } catch (err) {
+    console.error("Failed to fetch claimable tournaments:", err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 8. User Profile
 app.get('/api/profile/:walletAddress', async (req, res) => {
   const { walletAddress } = req.params;
   const addr = walletAddress.toLowerCase();
@@ -290,27 +328,27 @@ app.get('/api/profile/:walletAddress', async (req, res) => {
   try {
     // 1. Stats
     const stats = await db.get(`
-SELECT
-COUNT(*) as games_played,
-  SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as games_won
+      SELECT
+        COUNT(*) as games_played,
+        SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as games_won
       FROM runs
       WHERE lower(wallet_address) = ?
-  `, [addr]);
+    `, [addr]);
 
     // 2. Tournament History
     // We can join participants with tournaments to get details
     const tournaments = await db.all(`
       SELECT
-t.id,
-  t.entry_fee,
-  t.end_time,
-  p.score,
-  p.attempts,
-  p.time_ms
+        t.id,
+        t.entry_fee,
+        t.end_time,
+        p.score,
+        p.attempts,
+        p.time_ms
       FROM participants p
       JOIN tournaments t ON p.tournament_id = t.id
       WHERE lower(p.wallet_address) = ?
-  ORDER BY t.end_time DESC
+      ORDER BY t.end_time DESC
     `, [addr]);
 
     res.json({

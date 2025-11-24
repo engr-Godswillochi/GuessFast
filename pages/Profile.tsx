@@ -50,7 +50,7 @@ const Profile: React.FC<ProfileProps> = ({ address, onBack, onLogout }) => {
                 // 3. Fetch Winnings
                 try {
                     const contract = await getContract();
-                    const win = await contract.checkWinnings(address);
+                    const win = await contract.getWinnings(address);
                     setWinnings(win);
                 } catch (e) {
                     console.warn("Failed to fetch winnings", e);
@@ -73,7 +73,7 @@ const Profile: React.FC<ProfileProps> = ({ address, onBack, onLogout }) => {
             await contract.claimWinnings();
 
             // Refresh winnings and balance
-            const win = await contract.checkWinnings(address);
+            const win = await contract.getWinnings(address);
             setWinnings(win);
             const bal = await checkBalance(address);
             setBalance(bal);

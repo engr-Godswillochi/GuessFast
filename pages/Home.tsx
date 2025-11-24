@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { startRun, createTournament, getProfile } from '../services/api';
 import { API_URL } from '../constants';
-import { connectWallet, checkBalance, approveCUSD, getContract, waitForTransactionConfirmation, getWinnings, payoutTournament, claimWinnings } from '../services/minipay';
+import { connectWallet, checkBalance, approveCUSD, getContract, waitForTransactionConfirmation, getWinnings, payoutTournament, claimWinnings, getTournament } from '../services/minipay';
 import Leaderboard from '../components/Leaderboard';
 import TournamentList from '../components/TournamentList';
 import CreateTournament from '../components/CreateTournament';
@@ -36,6 +36,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
 
   // Winnings State
   const [claimableWinnings, setClaimableWinnings] = useState('0');
+  const [unclaimedTournamentId, setUnclaimedTournamentId] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Global Leaderboard State
@@ -97,13 +98,33 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       .catch(console.error);
   }, []);
 
-  // Check claimable winnings when address changes
+  // Check claimable winnings and pending payouts
   useEffect(() => {
     if (address) {
+      // 1. Check on-chain winnings
       getWinnings(address).then(winnings => {
         setClaimableWinnings(winnings);
         console.log("Claimable winnings:", winnings);
       }).catch(console.error);
+
+      // 2. Check for pending payouts
+      fetch(`${API_URL}/api/user/${address}/claimable-tournaments`)
+        .then(res => res.json())
+        .then(async (data) => {
+          if (data.claimableIds && data.claimableIds.length > 0) {
+            console.log("Found potential claimable tournaments:", data.claimableIds);
+            // Check on-chain status for each
+            for (const id of data.claimableIds) {
+              const t = await getTournament(id);
+              if (t && !t.isPaidOut) {
+                console.log("Found unclaimed tournament:", id);
+                setUnclaimedTournamentId(id);
+                break; // Just handle one at a time for simplicity
+              }
+            }
+          }
+        })
+        .catch(console.error);
     }
   }, [address]);
 
@@ -167,55 +188,44 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
     if (!address) return;
     setIsClaiming(true);
     try {
-      // 1. Get the tournament ID (assuming the user won the last ended tournament they played)
-      // Ideally, we should know WHICH tournament they won.
-      // For now, let's fetch the user's profile to find the winning tournament.
-      const profile = await fetch(`${API_URL}/api/profile/${address}`).then(res => res.json());
-      const winningTournament = profile.history.find((t: any) => t.score > 0); // Simplified check, ideally check status='won' from backend
+      // Case 1: Pending Payout (Needs signature + payout + claim)
+      if (unclaimedTournamentId) {
+        console.log("Requesting payout signature for tournament:", unclaimedTournamentId);
 
-      // Better approach: The backend knows the winner.
-      // We need to know which tournament ID to claim for.
-      // Let's assume for this hackathon demo, we check the most recent winning tournament.
-      if (!winningTournament) {
-        alert("No winning tournament found.");
-        setIsClaiming(false);
-        return;
+        // 1. Get Signature
+        const sigResponse = await fetch(`${API_URL}/api/tournaments/${unclaimedTournamentId}/payout-signature`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: address })
+        });
+
+        if (!sigResponse.ok) {
+          const err = await sigResponse.json();
+          throw new Error(err.error || 'Failed to get signature');
+        }
+
+        const { signature } = await sigResponse.json();
+        console.log("Got signature:", signature);
+
+        // 2. Trigger Payout
+        console.log("Triggering payout on-chain...");
+        const payoutTx = await payoutTournament(unclaimedTournamentId, address, signature);
+        if (!payoutTx) throw new Error("Payout transaction failed");
+
+        // Wait for payout to be mined
+        await new Promise(r => setTimeout(r, 5000));
       }
 
-      const tournamentId = winningTournament.id;
-
-      // 2. Get Signature from Backend
-      console.log("Requesting payout signature for tournament:", tournamentId);
-      const sigResponse = await fetch(`${API_URL}/api/tournaments/${tournamentId}/payout-signature`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: address })
-      });
-
-      if (!sigResponse.ok) {
-        const err = await sigResponse.json();
-        throw new Error(err.error || 'Failed to get signature');
-      }
-
-      const { signature } = await sigResponse.json();
-      console.log("Got signature:", signature);
-
-      // 3. Trigger Payout with Signature
-      console.log("Triggering payout on-chain...");
-      const payoutTx = await payoutTournament(tournamentId, address, signature);
-      if (!payoutTx) throw new Error("Payout transaction failed");
-
-      // Wait for payout to be mined (simple delay for demo)
-      await new Promise(r => setTimeout(r, 5000));
-
-      // 4. Claim Winnings
+      // Case 2: Claim Winnings (Withdraw from contract)
+      // Always try to claim if we have winnings OR if we just did a payout
       console.log("Claiming winnings...");
       const claimTx = await claimWinnings();
       if (!claimTx) throw new Error("Claim transaction failed");
 
       alert("Prize claimed successfully! 🏆");
 
-      // Refresh winnings
+      // Reset state
+      setUnclaimedTournamentId(null);
       const winnings = await getWinnings(address);
       setClaimableWinnings(winnings);
 
@@ -256,13 +266,13 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
           </div>
 
           {/* Claim Prize Button */}
-          {claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0) && (
+          {(unclaimedTournamentId !== null || (claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0))) && (
             <div className="w-full glass-panel p-4 rounded-xl border border-arcane-accent/50 mb-4 animate-pulse-slow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-slate-400 font-tech uppercase">Claimable Winnings</p>
                   <p className="text-2xl font-bold text-arcane-accent font-mono">
-                    {(BigInt(claimableWinnings) / BigInt(10 ** 18)).toString()} CELO
+                    {unclaimedTournamentId ? "Prize Pending" : (BigInt(claimableWinnings) / BigInt(10 ** 18)).toString() + " CELO"}
                   </p>
                 </div>
                 <button
