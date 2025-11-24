@@ -5,7 +5,7 @@ import { getRandomWord, isValidWord } from './words';
 
 const app = express();
 
-// CORS Configuration - Allow production frontend
+// CORS Configuration - Allow production frontend and Vercel preview URLs
 const allowedOrigins = [
   'https://guess-fast.vercel.app',
   'http://localhost:5173', // Local development
@@ -22,12 +22,18 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // Allow Vercel preview URLs (pattern: https://guess-fast-*.vercel.app)
+    if (origin.startsWith('https://guess-fast-') && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    console.warn(`CORS blocked request from origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
