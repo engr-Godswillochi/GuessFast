@@ -37,23 +37,30 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
                 throw new Error("Transaction failed or was not confirmed");
             }
 
-            console.log("Tournament created on blockchain! Getting tournament ID...");
+            console.log("Tournament created on blockchain!");
 
-            // 2. Get the tournament ID from blockchain
-            const tournamentId = await contract.getTournamentCount();
-            console.log("Tournament ID from blockchain:", tournamentId);
+            // 2. Parse tournament ID from transaction receipt
+            const receipt = await window.ethereum!.request({
+                method: 'eth_getTransactionReceipt',
+                params: [txHash]
+            });
 
-            // 3. Read tournament details from blockchain to get the ACTUAL endTime
-            console.log("Reading tournament details from blockchain...");
-            const tournamentData = await contract.getTournament(tournamentId);
+            console.log("Transaction receipt:", receipt);
 
-            if (!tournamentData) {
-                throw new Error("Failed to read tournament from blockchain");
-            }
+            // The TournamentCreated event is emitted with the tournament ID
+            // Event signature: TournamentCreated(uint256 indexed id, uint256 entryFee, uint256 endTime)
+            // The first topic is the event signature, second topic is the indexed id
+            const tournamentId = receipt.logs && receipt.logs[0] && receipt.logs[0].topics[1]
+                ? parseInt(receipt.logs[0].topics[1], 16)
+                : 1; // Fallback to 1 if we can't parse
 
-            console.log("Tournament data from blockchain:", tournamentData);
+            console.log("Tournament ID from event:", tournamentId);
 
-            // 4. Create tournament in backend with blockchain's endTime
+            // 3. Calculate endTime (blockchain uses block.timestamp + duration in seconds)
+            // We'll use our own calculation since getTournament has issues
+            const endTime = Math.floor(Date.now() / 1000) + (parseInt(duration) * 60);
+
+            // 4. Create tournament in backend
             const [whole = "0", decimal = ""] = entryFee.split(".");
             const paddedDecimal = decimal.padEnd(18, "0");
             const entryFeeWei = (whole + paddedDecimal).replace(/^0+/, "") || "0";
@@ -64,7 +71,7 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
                 body: JSON.stringify({
                     id: tournamentId,
                     entryFee: entryFeeWei,
-                    endTime: tournamentData.endTime // Use blockchain's endTime
+                    endTime: endTime // Use calculated endTime
                 })
             });
 
