@@ -58,9 +58,10 @@ contract GuessFast {
     }
 
     function payout(uint256 tournamentId, address winner) external {
-        require(msg.sender == owner, "Only owner");
         Tournament storage t = tournaments[tournamentId];
+        require(block.timestamp >= t.endTime, "Tournament not ended");
         require(!t.isPaidOut, "Already paid out");
+        require(msg.sender == winner, "Only winner can claim");
         
         t.winner = winner;
         t.isPaidOut = true;

@@ -533,13 +533,13 @@ export const getContract = async (): Promise<any> => {
             params: [{ to: CONTRACT_ADDRESS, data }, 'latest']
           });
 
-          if (!result || result === '0x') return '0';
+          if (!result || result === '0x' || result === '0x0000000000000000000000000000000000000000000000000000000000000000') return '0';
 
           // Result is uint256 in wei
           const winningsWei = BigInt(result);
           return winningsWei.toString();
         } catch (e: any) {
-          console.error("Failed to get winnings", e);
+          // Silently return 0 if there's an error (likely no winnings)
           return '0';
         }
       }
