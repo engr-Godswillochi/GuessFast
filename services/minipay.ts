@@ -399,6 +399,45 @@ export const getContract = async (): Promise<any> => {
       return 0;
     },
 
+    getTournament: async (tournamentId: number): Promise<any> => {
+      if (window.ethereum) {
+        try {
+          // Function signature: tournaments(uint256)
+          // Selector: 0xd3a2d240
+          const selector = "0xd3a2d240";
+          const idHex = tournamentId.toString(16).padStart(64, '0');
+          const data = selector + idHex;
+
+          const result = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ to: CONTRACT_ADDRESS, data }, 'latest']
+          });
+
+          if (!result || result === '0x') return null;
+
+          // Decode the result (Tournament struct)
+          // Returns: id, entryFee, endTime, prizePool, winner, isOpen, isPaidOut
+          const hex = result.slice(2); // Remove 0x
+
+          const id = parseInt(hex.slice(0, 64), 16);
+          const entryFee = BigInt('0x' + hex.slice(64, 128)).toString();
+          const endTime = parseInt(hex.slice(128, 192), 16);
+          const prizePool = BigInt('0x' + hex.slice(192, 256)).toString();
+          const winner = '0x' + hex.slice(280, 320); // Address is last 20 bytes of 32-byte word
+          const isOpen = parseInt(hex.slice(320, 384), 16) === 1;
+          const isPaidOut = parseInt(hex.slice(384, 448), 16) === 1;
+
+          console.log("Tournament from blockchain:", { id, entryFee, endTime, prizePool, winner, isOpen, isPaidOut });
+
+          return { id, entryFee, endTime, prizePool, winner, isOpen, isPaidOut };
+        } catch (e: any) {
+          console.error("Failed to fetch tournament", e);
+          return null;
+        }
+      }
+      return null;
+    },
+
     getOwner: async (): Promise<string> => {
       if (window.ethereum) {
         try {

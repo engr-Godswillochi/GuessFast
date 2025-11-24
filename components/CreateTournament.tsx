@@ -70,15 +70,20 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
             const tournamentId = await contract.getTournamentCount();
             console.log("Tournament ID from blockchain:", tournamentId);
 
-            // 3. Create tournament in backend with correct ID and entry fee in Wei
-            // Use string manipulation to avoid floating point precision issues
+            // 3. Read tournament details from blockchain to get the ACTUAL endTime
+            console.log("Reading tournament details from blockchain...");
+            const tournamentData = await contract.getTournament(tournamentId);
+
+            if (!tournamentData) {
+                throw new Error("Failed to read tournament from blockchain");
+            }
+
+            console.log("Tournament data from blockchain:", tournamentData);
+
+            // 4. Create tournament in backend with blockchain's endTime
             const [whole = "0", decimal = ""] = entryFee.split(".");
             const paddedDecimal = decimal.padEnd(18, "0");
             const entryFeeWei = (whole + paddedDecimal).replace(/^0+/, "") || "0";
-
-            // IMPORTANT: Use Unix timestamp (seconds), not milliseconds
-            // Smart contract uses block.timestamp which is in seconds
-            const endTime = Math.floor(Date.now() / 1000) + (parseInt(duration) * 60);
 
             await fetch(`${API_URL}/tournaments`, {
                 method: 'POST',
@@ -86,7 +91,7 @@ const CreateTournament: React.FC<CreateTournamentProps> = ({ onBack, onCreated }
                 body: JSON.stringify({
                     id: tournamentId,
                     entryFee: entryFeeWei,
-                    endTime
+                    endTime: tournamentData.endTime // Use blockchain's endTime
                 })
             });
 
