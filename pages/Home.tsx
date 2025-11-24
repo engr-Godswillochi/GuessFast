@@ -34,6 +34,10 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   const [hasJoined, setHasJoined] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Winnings State
+  const [claimableWinnings, setClaimableWinnings] = useState('0');
+  const [isClaiming, setIsClaiming] = useState(false);
+
   // Global Leaderboard State
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
 
@@ -93,6 +97,18 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       .catch(console.error);
   }, []);
 
+  // Check claimable winnings when address changes
+  useEffect(() => {
+    if (address) {
+      getContract().then(contract => {
+        contract.getWinnings(address).then(winnings => {
+          setClaimableWinnings(winnings);
+          console.log("Claimable winnings:", winnings);
+        });
+      }).catch(console.error);
+    }
+  }, [address]);
+
   const handleJoin = async () => {
     if (!selectedTournament || !address) return;
     setIsStaking(true);
@@ -142,10 +158,51 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
     if (!address || !selectedTournament) return;
     try {
       const { runId, secretWord } = await startRun(address, selectedTournament.id);
-      onGameStart(runId, secretWord, selectedTournament.id);
+      onGameStart(runId, secretWord, selectedTournament?.id);
     } catch (e) {
       console.error(e);
       setError("Failed to start game");
+    }
+  };
+
+  const handleClaimPrize = async () => {
+    if (!address) return;
+    setIsClaiming(true);
+    setError(null);
+
+    try {
+      const contract = await getContract();
+
+      // Check if we have winnings to claim
+      const winnings = await contract.getWinnings(address);
+      if (winnings === '0') {
+        setError('No winnings to claim');
+        setIsClaiming(false);
+        return;
+      }
+
+      console.log("Claiming winnings:", winnings);
+
+      // Claim the winnings
+      const txHash = await contract.claimWinnings();
+      if (!txHash) {
+        throw new Error("Transaction rejected");
+      }
+
+      console.log("Claim transaction sent:", txHash);
+      const confirmed = await waitForTransactionConfirmation(txHash);
+
+      if (confirmed) {
+        alert(`Successfully claimed ${(BigInt(winnings) / BigInt(10 ** 18)).toString()} CELO!`);
+        // Refresh winnings
+        const newWinnings = await contract.getWinnings(address);
+        setClaimableWinnings(newWinnings);
+      }
+    } catch (err: any) {
+      console.error("Failed to claim prize:", err);
+      setError(err.message || "Failed to claim prize");
+    } finally {
+      setIsClaiming(false);
     }
   };
 
@@ -166,15 +223,38 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
           Connect Wallet
         </button>
       ) : (
-        <div className="w-full flex justify-end mb-4">
-          <button
-            onClick={onViewProfile}
-            className="px-4 py-2 bg-arcane-primary/20 border border-arcane-primary/50 text-arcane-primary text-xs font-bold rounded hover:bg-arcane-primary/30 transition-all font-tech uppercase flex items-center gap-2"
-          >
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </button>
-        </div>
+        <>
+          <div className="w-full flex justify-end mb-4">
+            <button
+              onClick={onViewProfile}
+              className="px-4 py-2 bg-arcane-primary/20 border border-arcane-primary/50 text-arcane-primary text-xs font-bold rounded hover:bg-arcane-primary/30 transition-all font-tech uppercase flex items-center gap-2"
+            >
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              {address.slice(0, 6)}...{address.slice(-4)}
+            </button>
+          </div>
+
+          {/* Claim Prize Button */}
+          {claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0) && (
+            <div className="w-full glass-panel p-4 rounded-xl border border-arcane-accent/50 mb-4 animate-pulse-slow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-tech uppercase">Claimable Winnings</p>
+                  <p className="text-2xl font-bold text-arcane-accent font-mono">
+                    {(BigInt(claimableWinnings) / BigInt(10 ** 18)).toString()} CELO
+                  </p>
+                </div>
+                <button
+                  onClick={handleClaimPrize}
+                  disabled={isClaiming}
+                  className="px-6 py-3 bg-arcane-accent/20 border border-arcane-accent text-arcane-accent font-bold rounded hover:bg-arcane-accent hover:text-black transition-all duration-300 disabled:opacity-50 font-tech uppercase shadow-neon"
+                >
+                  {isClaiming ? 'Claiming...' : '🏆 Claim Prize'}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {address && (
