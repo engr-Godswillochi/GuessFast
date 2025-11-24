@@ -59,8 +59,17 @@ app.post('/api/runs', async (req, res) => {
   try {
     if (tournamentId) {
       const tournament = await db.get('SELECT end_time FROM tournaments WHERE id = ?', [tournamentId]);
-      if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
-      if (tournament.end_time < Date.now()) return res.status(400).json({ error: 'Tournament ended' });
+      console.log(`[Start Run] Tournament ${tournamentId} check:`, tournament);
+      if (!tournament) {
+        console.log(`[Start Run] Tournament ${tournamentId} not found in database`);
+        return res.status(404).json({ error: 'Tournament not found' });
+      }
+      // tournament.end_time is in seconds, so compare with current time in seconds
+      const currentTimeSeconds = Math.floor(Date.now() / 1000);
+      console.log(`[Start Run] Tournament ${tournamentId} - endTime: ${tournament.end_time}, currentTime: ${currentTimeSeconds}, ended: ${tournament.end_time < currentTimeSeconds}`);
+      if (tournament.end_time < currentTimeSeconds) {
+        return res.status(400).json({ error: 'Tournament ended' });
+      }
     }
 
     const info = await db.run(`
