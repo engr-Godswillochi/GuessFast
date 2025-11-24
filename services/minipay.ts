@@ -441,7 +441,7 @@ export const getContract = async (): Promise<any> => {
     getOwner: async (): Promise<string> => {
       if (window.ethereum) {
         try {
-          const selector = "0x893d20e8"; // owner()
+          const selector = "0x8da5cb5b"; // owner()
           const result = await window.ethereum.request({
             method: 'eth_call',
             params: [{ to: CONTRACT_ADDRESS, data: selector }, 'latest']
@@ -462,8 +462,8 @@ export const getContract = async (): Promise<any> => {
       if (window.ethereum) {
         try {
           // Function signature: payout(uint256,address)
-          // Selector: 0x6c19e783
-          const selector = "0x6c19e783";
+          // Selector: 0xbe95e01a
+          const selector = "0xbe95e01a";
           const idHex = tournamentId.toString(16).padStart(64, '0');
           const addressHex = winnerAddress.toLowerCase().replace('0x', '').padStart(64, '0');
           const data = selector + idHex + addressHex;
@@ -494,8 +494,8 @@ export const getContract = async (): Promise<any> => {
       if (window.ethereum) {
         try {
           // Function signature: claimWinnings()
-          // Selector: 0x3f138d4e
-          const data = "0x3f138d4e";
+          // Selector: 0xb401faf1
+          const data = "0xb401faf1";
 
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           const txHash = await window.ethereum.request({
@@ -523,8 +523,8 @@ export const getContract = async (): Promise<any> => {
       if (window.ethereum) {
         try {
           // Function signature: winnings(address)
-          // Selector: 0x5bb47808
-          const selector = "0x5bb47808";
+          // Selector: 0xea3a1499
+          const selector = "0xea3a1499";
           const addressHex = address.toLowerCase().replace('0x', '').padStart(64, '0');
           const data = selector + addressHex;
 
