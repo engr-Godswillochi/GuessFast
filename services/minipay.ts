@@ -349,10 +349,20 @@ export const getTournament = async (tournamentId: number): Promise<any> => {
       const idHex = tournamentId.toString(16).padStart(64, '0');
       const data = selector + idHex;
 
-      const result = await window.ethereum.request({
-        method: 'eth_call',
-        params: [{ to: CONTRACT_ADDRESS, data }, 'latest']
-      });
+      let result;
+      try {
+        result = await window.ethereum.request({
+          method: 'eth_call',
+          params: [{ to: CONTRACT_ADDRESS, data }, 'latest']
+        });
+      } catch (callError: any) {
+        // If the call reverts (tournament doesn't exist), return null instead of throwing
+        if (callError.message && callError.message.includes('execution reverted')) {
+          console.log(`Tournament ${tournamentId} does not exist on-chain`);
+          return null;
+        }
+        throw callError; // Re-throw other errors
+      }
 
       if (!result || result === '0x') return null;
 

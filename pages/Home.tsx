@@ -38,6 +38,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   const [claimableWinnings, setClaimableWinnings] = useState('0');
   const [unclaimedTournamentId, setUnclaimedTournamentId] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [prizePool, setPrizePool] = useState('0');
 
   // Global Leaderboard State
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
@@ -123,7 +124,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
                   break; // Just handle one at a time for simplicity
                 }
               } catch (error) {
-                console.warn(`Tournament ${id} not found on-chain, skipping...`);
+                console.warn(`Tournament ${id} not found on-chain or not yet mined, skipping...`);
                 // Continue to next tournament
               }
             }
@@ -132,6 +133,18 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
         .catch(console.error);
     }
   }, [address]);
+
+  // Fetch prize pool when tournament is selected
+  useEffect(() => {
+    if (selectedTournament) {
+      setPrizePool('0'); // Reset first
+      getTournament(selectedTournament.id).then(t => {
+        if (t) {
+          setPrizePool(t.prizePool);
+        }
+      }).catch(console.error);
+    }
+  }, [selectedTournament]);
 
   const handleJoin = async () => {
     if (!selectedTournament || !address) return;
@@ -328,6 +341,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
                 <h2 className="text-2xl font-bold text-white font-arcane mb-2">Tournament #{selectedTournament.id}</h2>
                 <div className="flex justify-between text-sm font-tech text-slate-300 mb-4">
                   <span>Entry: <span className="text-arcane-gold">{(parseFloat(selectedTournament.entry_fee) / 10 ** 18).toFixed(2)} CELO</span></span>
+                  <span>Prize Pool: <span className="text-arcane-gold font-bold">{(BigInt(prizePool) / BigInt(10 ** 18)).toString()} CELO</span></span>
                   <span>
                     {selectedTournament.end_time < Math.floor(Date.now() / 1000)
                       ? <span className="text-red-400">Ended</span>
