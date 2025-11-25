@@ -41,6 +41,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   const [prizePool, setPrizePool] = useState('0');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   // Global Leaderboard State
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
@@ -262,11 +263,33 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
 
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto p-4 space-y-6 z-10">
-      <div className="text-center space-y-2">
-        <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-arcane-primary to-arcane-accent font-arcane text-glow animate-float">
-          GuessFast
-        </h1>
-        <p className="text-slate-400 font-tech tracking-widest uppercase text-xs sm:text-sm">Tournament Edition</p>
+      {/* Header */}
+      <div className="w-full flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded bg-arcane-primary/20 flex items-center justify-center border border-arcane-primary/50 shadow-neon">
+            <span className="text-2xl">⚡</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white font-arcane text-glow">GuessFast</h1>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowHowToPlay(true)}
+            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 hover:text-white hover:border-white transition-all"
+            title="How to Play"
+          >
+            ?
+          </button>
+          {address && (
+            <button
+              onClick={onViewProfile}
+              className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 hover:text-white hover:border-white transition-all"
+              title="Profile"
+            >
+              👤
+            </button>
+          )}
+        </div>
       </div>
 
       {!address ? (
@@ -278,15 +301,7 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
         </button>
       ) : (
         <>
-          <div className="w-full flex justify-end mb-4">
-            <button
-              onClick={onViewProfile}
-              className="px-4 py-2 bg-arcane-primary/20 border border-arcane-primary/50 text-arcane-primary text-xs font-bold rounded hover:bg-arcane-primary/30 transition-all font-tech uppercase flex items-center gap-2"
-            >
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </button>
-          </div>
+          {/* Profile button moved to header */}
 
           {/* Claim Prize Button */}
           {(unclaimedTournamentId !== null || (claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0))) && (
@@ -410,6 +425,49 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
                 Awesome
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-arcane-primary rounded-xl p-6 max-w-md w-full shadow-[0_0_30px_rgba(0,243,255,0.15)] relative">
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold text-white font-arcane mb-6 text-center text-glow">How to Play</h2>
+
+            <div className="space-y-4 font-tech text-sm text-slate-300">
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">1</div>
+                <div>
+                  <h3 className="text-white font-bold mb-1">Connect & Join</h3>
+                  <p>Connect your MiniPay wallet and pay the entry fee (in CELO) to join a tournament.</p>
+                </div>
+              </div>
+
+
+
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">3</div>
+                <div>
+                  <h3 className="text-white font-bold mb-1">Win Prizes</h3>
+                  <p>Solve it fast! The fastest player with the fewest attempts wins the ENTIRE prize pool.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="w-full mt-8 py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all uppercase tracking-widest shadow-neon"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}
