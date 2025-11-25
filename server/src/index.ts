@@ -155,13 +155,53 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
+// User Profile
+app.get('/api/profile/:walletAddress', async (req, res) => {
+  const { walletAddress } = req.params;
+  try {
+    // Get user stats
+    const stats = await db.get(`
+      SELECT 
+        COUNT(*) as gamesPlayed,
+        SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) as gamesWon
+      FROM runs
+      WHERE wallet_address = ?
+    `, [walletAddress.toLowerCase()]);
+
+    // Get tournament history
+    const tournaments = await db.all(`
+      SELECT 
+        t.id,
+        t.entry_fee,
+        t.end_time,
+        r.attempts,
+        (r.end_time - r.start_time) as time_ms
+      FROM runs r
+      JOIN tournaments t ON r.tournament_id = t.id
+      WHERE r.wallet_address = ? AND r.status = 'won'
+      ORDER BY t.end_time DESC
+    `, [walletAddress.toLowerCase()]);
+
+    res.json({
+      stats: {
+        gamesPlayed: stats.gamesPlayed || 0,
+        gamesWon: stats.gamesWon || 0
+      },
+      tournaments: tournaments || []
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // 5. Tournament Endpoints
 
 // List Tournaments
 app.get('/api/tournaments', async (req, res) => {
   try {
-    // Return all tournaments, let frontend handle display/filtering
-    const rows = await db.all('SELECT * FROM tournaments WHERE is_open = 1 ORDER BY end_time DESC');
+    // Return all tournaments (including expired), let frontend handle display/filtering
+    const rows = await db.all('SELECT * FROM tournaments ORDER BY end_time DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
