@@ -178,7 +178,7 @@ const Profile: React.FC<ProfileProps> = ({ address, onBack, onLogout }) => {
                             <div key={t.id} className="bg-white/5 border border-white/10 p-3 rounded flex justify-between items-center">
                                 <div>
                                     <p className="text-white font-bold text-sm">Tournament #{t.id}</p>
-                                    <p className="text-xs text-slate-400">{new Date(t.end_time).toLocaleDateString()}</p>
+                                    <p className="text-xs text-slate-400">{new Date(t.end_time * 1000).toLocaleDateString()}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-arcane-gold font-mono text-sm">{t.score} pts</p>

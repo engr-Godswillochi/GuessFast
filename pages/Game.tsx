@@ -12,6 +12,12 @@ interface GameProps {
   tournamentId?: number | null;
 }
 
+declare global {
+  interface Window {
+    confetti: any;
+  }
+}
+
 const Game: React.FC<GameProps> = ({ runId, targetWord, onEnd, tournamentId }) => {
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -65,6 +71,14 @@ const Game: React.FC<GameProps> = ({ runId, targetWord, onEnd, tournamentId }) =
     // Check Win
     if (currentGuess.toUpperCase() === targetWord.toUpperCase()) {
       setGameOverState('win');
+      if (window.confetti) {
+        window.confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00f3ff', '#9d4edd', '#ffd700']
+        });
+      }
       await submitFinal(runId, true, newGuesses.length);
     } else if (newGuesses.length >= MAX_GUESSES) {
       setGameOverState('lose');
@@ -127,15 +141,39 @@ const Game: React.FC<GameProps> = ({ runId, targetWord, onEnd, tournamentId }) =
 
       {/* Result Overlay */}
       {gameOverState && (
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-pop">
-          <div className="glass-panel p-6 sm:p-8 rounded-xl text-center border border-arcane-primary/50 shadow-neon max-w-xs w-full mx-4">
-            <h2 className={`text-3xl sm:text-5xl font-bold mb-4 font-arcane text-glow ${gameOverState === 'win' ? 'text-arcane-primary' : 'text-arcane-danger'}`}>
-              {gameOverState === 'win' ? 'VICTORY' : 'DEFEAT'}
-            </h2>
-            <p className="text-xl mb-6 font-tech text-slate-300">Word was: <span className="font-mono font-bold text-white ml-2">{targetWord}</span></p>
-            <button onClick={onEnd} className="w-full py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded font-tech uppercase tracking-widest hover:bg-arcane-primary hover:text-black transition-all shadow-neon">
-              Return to Home
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
+          <div className="bg-slate-900 border border-arcane-gold rounded-xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(255,215,0,0.2)] transform animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent ${gameOverState === 'win' ? 'via-arcane-primary' : 'via-arcane-danger'} to-transparent`}></div>
+
+            <div className="text-center">
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 border-2 ${gameOverState === 'win' ? 'bg-arcane-primary/10 text-arcane-primary border-arcane-primary' : 'bg-arcane-danger/10 text-arcane-danger border-arcane-danger'} animate-pop`}>
+                {gameOverState === 'win' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+
+              <h2 className={`text-3xl font-bold mb-2 font-arcane text-glow ${gameOverState === 'win' ? 'text-arcane-primary' : 'text-arcane-danger'}`}>
+                {gameOverState === 'win' ? 'VICTORY!' : 'DEFEAT'}
+              </h2>
+
+              <p className="text-slate-400 font-tech mb-6">
+                The word was <span className="text-white font-bold font-mono text-lg ml-1">{targetWord}</span>
+              </p>
+
+              <button
+                onClick={onEnd}
+                className={`w-full py-3 font-bold rounded font-tech uppercase tracking-widest transition-all shadow-neon ${gameOverState === 'win' ? 'bg-arcane-primary text-black hover:bg-arcane-primary/90' : 'bg-arcane-danger text-white hover:bg-arcane-danger/90'}`}
+              >
+                {gameOverState === 'win' ? 'Claim Glory' : 'Try Again'}
+              </button>
+            </div>
           </div>
         </div>
       )}
