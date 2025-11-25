@@ -263,12 +263,20 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
 
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto p-4 space-y-6 z-10">
-      {/* Top Bar */}
-      <div className="w-full flex justify-between items-center absolute top-4 left-0 px-4 z-20">
+      {/* Hero Section */}
+      <div className="text-center space-y-2 mt-8 mb-4">
+        <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-arcane-primary to-arcane-accent font-arcane text-glow animate-float">
+          GuessFast
+        </h1>
+        <p className="text-slate-400 font-tech tracking-widest uppercase text-xs sm:text-sm">Tournament Edition</p>
+      </div>
+
+      {/* Buttons Bar */}
+      <div className="w-full flex justify-between items-center gap-2 mb-4">
         {/* Left Side - How to Play */}
         <button
           onClick={() => setShowHowToPlay(true)}
-          className="px-4 py-2 bg-arcane-gold text-black font-bold rounded-full hover:bg-white transition-all shadow-neon flex items-center gap-2 font-tech uppercase text-xs sm:text-sm animate-pulse"
+          className="px-4 py-2 bg-arcane-gold text-black font-bold rounded-full hover:bg-white transition-all shadow-neon flex items-center gap-2 font-tech uppercase text-xs sm:text-sm"
         >
           <span className="text-lg">?</span> How to Play
         </button>
@@ -283,14 +291,6 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
             {address.slice(0, 6)}...{address.slice(-4)}
           </button>
         )}
-      </div>
-
-      {/* Hero Section */}
-      <div className="text-center space-y-2 mt-12 mb-8">
-        <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-arcane-primary to-arcane-accent font-arcane text-glow animate-float">
-          GuessFast
-        </h1>
-        <p className="text-slate-400 font-tech tracking-widest uppercase text-xs sm:text-sm">Tournament Edition</p>
       </div>
 
       {!address ? (
