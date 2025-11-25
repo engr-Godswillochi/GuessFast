@@ -1,8 +1,8 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 
-// Use process.cwd() to resolve path relative to where the server process is started
-const dbPath = path.resolve(process.cwd(), 'game2.db');
+// Use __dirname to resolve path relative to this file (server/src/db.ts) -> root/game2.db
+const dbPath = path.resolve(__dirname, '../../game2.db');
 const db = new sqlite3.Database(dbPath);
 
 // Promisify helper functions
