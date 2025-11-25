@@ -258,221 +258,228 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
       alert(`Claim failed: ${e.message}`);
     } finally {
       setIsClaiming(false);
-    };
-
-    return (
-      <div className="flex flex-col items-center w-full max-w-md mx-auto p-4 space-y-6 z-10">
-        {/* Top Bar */}
-        <div className="w-full flex justify-between items-center absolute top-4 left-0 px-4 z-20">
-          {/* Left Side - How to Play */}
-          <button
-            onClick={() => setShowHowToPlay(true)}
-            className="px-4 py-2 bg-arcane-gold text-black font-bold rounded-full hover:bg-white transition-all shadow-neon flex items-center gap-2 font-tech uppercase text-xs sm:text-sm animate-pulse"
-          >
-            <span className="text-lg">?</span> How to Play
-          </button>
-
-          {/* Right Side - Profile */}
-          {address && (
-            <button
-              onClick={onViewProfile}
-              className="px-4 py-2 bg-arcane-primary/20 border border-arcane-primary/50 text-arcane-primary text-xs font-bold rounded-full hover:bg-arcane-primary/30 transition-all font-tech uppercase flex items-center gap-2 backdrop-blur-md"
-            >
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </button>
-          )}
-        </div>
-
-        {/* Hero Section */}
-        <div className="text-center space-y-2 mt-12 mb-8">
-          <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-arcane-primary to-arcane-accent font-arcane text-glow animate-float">
-            GuessFast
-          </h1>
-          <p className="text-slate-400 font-tech tracking-widest uppercase text-xs sm:text-sm">Tournament Edition</p>
-        </div>
-
-        {!address ? (
-          <button
-            onClick={handleConnect}
-            className="w-full py-4 bg-arcane-primary/10 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 font-tech tracking-widest uppercase shadow-neon"
-          >
-            Connect Wallet
-          </button>
-        ) : (
-          <>
-            {/* Profile button moved to header */}
-
-            {/* Claim Prize Button */}
-            {(unclaimedTournamentId !== null || (claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0))) && (
-              <div className="w-full glass-panel p-4 rounded-xl border border-arcane-accent/50 mb-4 animate-pulse-slow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-slate-400 font-tech uppercase">Claimable Winnings</p>
-                    <p className="text-2xl font-bold text-arcane-accent font-mono">
-                      {unclaimedTournamentId ? "Prize Pending" : (BigInt(claimableWinnings) / BigInt(10 ** 18)).toString() + " CELO"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleClaimPrize}
-                    disabled={isClaiming}
-                    className="px-6 py-3 bg-arcane-accent/20 border border-arcane-accent text-arcane-accent font-bold rounded hover:bg-arcane-accent hover:text-black transition-all duration-300 disabled:opacity-50 font-tech uppercase shadow-neon"
-                  >
-                    {isClaiming ? 'Claiming...' : '🏆 Claim Prize'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {address && (
-          <>
-            {isCreating ? (
-              <CreateTournament
-                onBack={() => setIsCreating(false)}
-                onCreated={() => setIsCreating(false)}
-              />
-            ) : !selectedTournament ? (
-              <div className="w-full space-y-4">
-                <button
-                  onClick={() => setIsCreating(true)}
-                  className="w-full py-3 bg-white/5 border border-white/10 text-slate-300 font-bold rounded hover:bg-white/10 hover:text-white transition-all font-tech uppercase tracking-wider"
-                >
-                  + Create Tournament
-                </button>
-                <TournamentList onSelect={setSelectedTournament} />
-
-                <div className="mt-8 w-full animate-fade-in">
-                  <h3 className="text-lg font-arcane text-white mb-2 text-center text-glow">Global Hall of Fame</h3>
-                  <Leaderboard entries={globalLeaderboard} />
-                </div>
-              </div>
-            ) : (
-              <div className="w-full space-y-4 animate-fade-in">
-                <button
-                  onClick={() => setSelectedTournament(null)}
-                  className="text-slate-400 hover:text-white font-tech text-sm mb-2 flex items-center gap-2"
-                >
-                  ← Back to Tournaments
-                </button>
-
-                <div className="glass-panel p-6 rounded-xl border border-arcane-primary/30">
-                  <h2 className="text-2xl font-bold text-white font-arcane mb-2">Tournament #{selectedTournament.id}</h2>
-                  <div className="flex justify-between text-sm font-tech text-slate-300 mb-4">
-                    <span>Entry: <span className="text-arcane-gold">{(parseFloat(selectedTournament.entry_fee) / 10 ** 18).toFixed(2)} CELO</span></span>
-                    <span>Prize Pool: <span className="text-arcane-gold font-bold">{(BigInt(prizePool) / BigInt(10 ** 18)).toString()} CELO</span></span>
-                    <span>
-                      {selectedTournament.end_time < Math.floor(Date.now() / 1000)
-                        ? <span className="text-red-400">Ended</span>
-                        : `Ends: ${new Date(selectedTournament.end_time * 1000).toLocaleTimeString()}`
-                      }
-                    </span>
-                  </div>
-
-                  {selectedTournament.end_time < Math.floor(Date.now() / 1000) ? (
-                    <div className="w-full py-3 bg-slate-800/50 border border-slate-700 text-slate-400 font-bold rounded text-center font-tech uppercase tracking-widest">
-                      Tournament Ended
-                    </div>
-                  ) : !hasJoined ? (
-                    <button
-                      onClick={handleJoin}
-                      disabled={isStaking}
-                      className="w-full py-3 bg-arcane-gold/10 border border-arcane-gold text-arcane-gold font-bold rounded hover:bg-arcane-gold hover:text-black transition-all duration-300 disabled:opacity-50 font-tech tracking-widest uppercase"
-                    >
-                      {isStaking ? 'Joining...' : 'Pay Entry Fee & Join'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handlePlay}
-                      className="w-full py-3 bg-arcane-primary/10 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 animate-pulse font-tech tracking-widest uppercase shadow-neon"
-                    >
-                      Play Now
-                    </button>
-                  )}
-                </div>
-
-                <div className="mt-6">
-                  <h3 className="text-lg font-arcane text-white mb-2">Leaderboard</h3>
-                  <Leaderboard entries={tournamentLeaderboard} />
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Success Modal */}
-        {showSuccessModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-slate-900 border border-arcane-gold rounded-xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(255,215,0,0.2)] transform animate-in zoom-in-95 duration-300 relative overflow-hidden">
-              {/* Background Glow */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-arcane-gold to-transparent"></div>
-
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-arcane-gold/10 text-arcane-gold mb-4 border border-arcane-gold/30">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-
-                <h3 className="text-2xl font-bold text-white font-arcane mb-2">Success!</h3>
-                <p className="text-slate-300 font-tech mb-6">{successMessage}</p>
-
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="w-full py-3 bg-arcane-gold text-black font-bold rounded hover:bg-arcane-gold/90 transition-all duration-300 font-tech uppercase tracking-widest"
-                >
-                  Awesome
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* How to Play Modal */}
-        {showHowToPlay && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-slate-900 border border-arcane-primary rounded-xl p-6 max-w-md w-full shadow-[0_0_30px_rgba(0,243,255,0.15)] relative">
-              <button
-                onClick={() => setShowHowToPlay(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-
-              <h2 className="text-2xl font-bold text-white font-arcane mb-6 text-center text-glow">How to Play</h2>
-
-              <div className="space-y-4 font-tech text-sm text-slate-300">
-                <div className="flex gap-4 items-start">
-                  <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">1</div>
-                  <div>
-                    <h3 className="text-white font-bold mb-1">Connect & Join</h3>
-                    <p>Connect your MiniPay wallet and pay the entry fee (in CELO) to join a tournament.</p>
-                  </div>
-                </div>
-
-
-
-                <div className="flex gap-4 items-start">
-                  <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">3</div>
-                  <div>
-                    <h3 className="text-white font-bold mb-1">Win Prizes</h3>
-                    <p>Solve it fast! The fastest player with the fewest attempts wins the ENTIRE prize pool.</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowHowToPlay(false)}
-                className="w-full mt-8 py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all uppercase tracking-widest shadow-neon"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    }
   };
 
-  export default Home;
+  return (
+    <div className="flex flex-col items-center w-full max-w-md mx-auto p-4 space-y-6 z-10">
+      {/* Top Bar */}
+      <div className="w-full flex justify-between items-center absolute top-4 left-0 px-4 z-20">
+        {/* Left Side - How to Play */}
+        <button
+          onClick={() => setShowHowToPlay(true)}
+          className="px-4 py-2 bg-arcane-gold text-black font-bold rounded-full hover:bg-white transition-all shadow-neon flex items-center gap-2 font-tech uppercase text-xs sm:text-sm animate-pulse"
+        >
+          <span className="text-lg">?</span> How to Play
+        </button>
+
+        {/* Right Side - Profile */}
+        {address && (
+          <button
+            onClick={onViewProfile}
+            className="px-4 py-2 bg-arcane-primary/20 border border-arcane-primary/50 text-arcane-primary text-xs font-bold rounded-full hover:bg-arcane-primary/30 transition-all font-tech uppercase flex items-center gap-2 backdrop-blur-md"
+          >
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </button>
+        )}
+      </div>
+
+      {/* Hero Section */}
+      <div className="text-center space-y-2 mt-12 mb-8">
+        <h1 className="text-4xl sm:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-arcane-primary to-arcane-accent font-arcane text-glow animate-float">
+          GuessFast
+        </h1>
+        <p className="text-slate-400 font-tech tracking-widest uppercase text-xs sm:text-sm">Tournament Edition</p>
+      </div>
+
+      {!address ? (
+        <button
+          onClick={handleConnect}
+          className="w-full py-4 bg-arcane-primary/10 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 font-tech tracking-widest uppercase shadow-neon"
+        >
+          Connect Wallet
+        </button>
+      ) : (
+        <>
+          {/* Profile button moved to header */}
+
+          {/* Claim Prize Button */}
+          {(unclaimedTournamentId !== null || (claimableWinnings !== '0' && BigInt(claimableWinnings) > BigInt(0))) && (
+            <div className="w-full glass-panel p-4 rounded-xl border border-arcane-accent/50 mb-4 animate-pulse-slow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400 font-tech uppercase">Claimable Winnings</p>
+                  <p className="text-2xl font-bold text-arcane-accent font-mono">
+                    {unclaimedTournamentId ? "Prize Pending" : (BigInt(claimableWinnings) / BigInt(10 ** 18)).toString() + " CELO"}
+                  </p>
+                </div>
+                <button
+                  onClick={handleClaimPrize}
+                  disabled={isClaiming}
+                  className="px-6 py-3 bg-arcane-accent/20 border border-arcane-accent text-arcane-accent font-bold rounded hover:bg-arcane-accent hover:text-black transition-all duration-300 disabled:opacity-50 font-tech uppercase shadow-neon"
+                >
+                  {isClaiming ? 'Claiming...' : '🏆 Claim Prize'}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {address && (
+        <>
+          {isCreating ? (
+            <CreateTournament
+              onBack={() => setIsCreating(false)}
+              onCreated={() => setIsCreating(false)}
+            />
+          ) : !selectedTournament ? (
+            <div className="w-full space-y-4">
+              <button
+                onClick={() => setIsCreating(true)}
+                className="w-full py-3 bg-white/5 border border-white/10 text-slate-300 font-bold rounded hover:bg-white/10 hover:text-white transition-all font-tech uppercase tracking-wider"
+              >
+                + Create Tournament
+              </button>
+              <TournamentList onSelect={setSelectedTournament} />
+
+              <div className="mt-8 w-full animate-fade-in">
+                <h3 className="text-lg font-arcane text-white mb-2 text-center text-glow">Global Hall of Fame</h3>
+                <Leaderboard entries={globalLeaderboard} />
+              </div>
+            </div>
+          ) : (
+            <div className="w-full space-y-4 animate-fade-in">
+              <button
+                onClick={() => setSelectedTournament(null)}
+                className="text-slate-400 hover:text-white font-tech text-sm mb-2 flex items-center gap-2"
+              >
+                ← Back to Tournaments
+              </button>
+
+              <div className="glass-panel p-6 rounded-xl border border-arcane-primary/30">
+                <h2 className="text-2xl font-bold text-white font-arcane mb-2">Tournament #{selectedTournament.id}</h2>
+                <div className="flex justify-between text-sm font-tech text-slate-300 mb-4">
+                  <span>Entry: <span className="text-arcane-gold">{(parseFloat(selectedTournament.entry_fee) / 10 ** 18).toFixed(2)} CELO</span></span>
+                  <span>Prize Pool: <span className="text-arcane-gold font-bold">{(BigInt(prizePool) / BigInt(10 ** 18)).toString()} CELO</span></span>
+                  <span>
+                    {selectedTournament.end_time < Math.floor(Date.now() / 1000)
+                      ? <span className="text-red-400">Ended</span>
+                      : `Ends: ${new Date(selectedTournament.end_time * 1000).toLocaleTimeString()}`
+                    }
+                  </span>
+                </div>
+
+                {selectedTournament.end_time < Math.floor(Date.now() / 1000) ? (
+                  <div className="w-full py-3 bg-slate-800/50 border border-slate-700 text-slate-400 font-bold rounded text-center font-tech uppercase tracking-widest">
+                    Tournament Ended
+                  </div>
+                ) : !hasJoined ? (
+                  <button
+                    onClick={handleJoin}
+                    disabled={isStaking}
+                    className="w-full py-3 bg-arcane-gold/10 border border-arcane-gold text-arcane-gold font-bold rounded hover:bg-arcane-gold hover:text-black transition-all duration-300 disabled:opacity-50 font-tech tracking-widest uppercase"
+                  >
+                    {isStaking ? 'Joining...' : 'Pay Entry Fee & Join'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handlePlay}
+                    className="w-full py-3 bg-arcane-primary/10 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all duration-300 animate-pulse font-tech tracking-widest uppercase shadow-neon"
+                  >
+                    Play Now
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-6">
+                <h3 className="text-lg font-arcane text-white mb-2">Leaderboard</h3>
+                <Leaderboard entries={tournamentLeaderboard} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-arcane-gold rounded-xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(255,215,0,0.2)] transform animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-arcane-gold to-transparent"></div>
+
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-arcane-gold/10 text-arcane-gold mb-4 border border-arcane-gold/30">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h3 className="text-2xl font-bold text-white font-arcane mb-2">Success!</h3>
+              <p className="text-slate-300 font-tech mb-6">{successMessage}</p>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-arcane-gold text-black font-bold rounded hover:bg-arcane-gold/90 transition-all duration-300 font-tech uppercase tracking-widest"
+              >
+                Awesome
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-arcane-primary rounded-xl p-6 max-w-md w-full shadow-[0_0_30px_rgba(0,243,255,0.15)] relative">
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold text-white font-arcane mb-6 text-center text-glow">How to Play</h2>
+
+            <div className="space-y-4 font-tech text-sm text-slate-300">
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">1</div>
+                <div>
+                  <h3 className="text-white font-bold mb-1">Connect & Join</h3>
+                  <p>Connect your MiniPay wallet and pay the entry fee (in CELO) to join a tournament.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">2</div>
+                <div>
+                  <h3 className="text-white font-bold mb-1">Guess the Word</h3>
+                  <p>You have 6 attempts to guess the 5-letter secret word. Green = Correct, Yellow = Wrong Spot.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-arcane-primary/10 text-arcane-primary flex items-center justify-center font-bold shrink-0 border border-arcane-primary/30">3</div>
+                <div>
+                  <h3 className="text-white font-bold mb-1">Win Prizes</h3>
+                  <p>Solve it fast! The fastest player with the fewest attempts wins the ENTIRE prize pool.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="w-full mt-8 py-3 bg-arcane-primary/20 border border-arcane-primary text-arcane-primary font-bold rounded hover:bg-arcane-primary hover:text-black transition-all uppercase tracking-widest shadow-neon"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Home;
