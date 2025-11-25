@@ -344,8 +344,8 @@ export const getTournament = async (tournamentId: number): Promise<any> => {
   if (window.ethereum) {
     try {
       // Function signature: tournaments(uint256)
-      // Selector: 0xd3a2d240
-      const selector = "0xd3a2d240";
+      // Selector: 0x7503e1b7 (calculated via ethers.id("tournaments(uint256)").slice(0, 10))
+      const selector = "0x7503e1b7";
       const idHex = tournamentId.toString(16).padStart(64, '0');
       const data = selector + idHex;
 
