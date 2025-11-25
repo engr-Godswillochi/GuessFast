@@ -39,6 +39,8 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
   const [unclaimedTournamentId, setUnclaimedTournamentId] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [prizePool, setPrizePool] = useState('0');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Global Leaderboard State
   const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
@@ -232,20 +234,23 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
 
         // Wait for payout to be mined
         await new Promise(r => setTimeout(r, 5000));
+
+        setSuccessMessage("Prize claimed successfully! 🏆");
+        setShowSuccessModal(true);
+        setUnclaimedTournamentId(null);
+      } else if (BigInt(claimableWinnings) > 0) {
+        // Case 2: Claim Winnings (Withdraw from contract)
+        // Only if we didn't just do a payout (or user clicks again)
+        console.log("Claiming winnings...");
+        const claimTx = await claimWinnings();
+        if (!claimTx) throw new Error("Claim transaction failed");
+        setSuccessMessage("Winnings claimed successfully! 🏆");
+        setShowSuccessModal(true);
       }
-
-      // Case 2: Claim Winnings (Withdraw from contract)
-      // Always try to claim if we have winnings OR if we just did a payout
-      console.log("Claiming winnings...");
-      const claimTx = await claimWinnings();
-      if (!claimTx) throw new Error("Claim transaction failed");
-
-      alert("Prize claimed successfully! 🏆");
 
       // Reset state
       setUnclaimedTournamentId(null);
       const winnings = await getWinnings(address);
-      setClaimableWinnings(winnings);
 
     } catch (e: any) {
       console.error("Claim failed:", e);
@@ -379,6 +384,34 @@ const Home: React.FC<HomeProps> = ({ address, setAddress, onGameStart, initialTo
             </div>
           )}
         </>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-arcane-gold rounded-xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(255,215,0,0.2)] transform animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-arcane-gold to-transparent"></div>
+
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-arcane-gold/10 text-arcane-gold mb-4 border border-arcane-gold/30">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h3 className="text-2xl font-bold text-white font-arcane mb-2">Success!</h3>
+              <p className="text-slate-300 font-tech mb-6">{successMessage}</p>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-arcane-gold text-black font-bold rounded hover:bg-arcane-gold/90 transition-all duration-300 font-tech uppercase tracking-widest"
+              >
+                Awesome
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

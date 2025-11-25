@@ -74,7 +74,9 @@ contract GuessFast {
         t.isOpen = false;
 
         if (t.prizePool > 0 && winner != address(0)) {
-            winnings[winner] += t.prizePool;
+            // Transfer directly to winner (msg.sender is verified as winner above)
+            (bool success, ) = payable(winner).call{value: t.prizePool}("");
+            require(success, "Transfer failed");
         }
 
         emit TournamentEnded(tournamentId, winner, t.prizePool);
