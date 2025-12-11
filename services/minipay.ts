@@ -16,16 +16,15 @@ declare global {
 const MOCK_WALLET_ADDRESS = "0xMockUserAddress1234567890abcdef";
 let isMockConnected = false;
 
-const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 (Wait, Celo Sepolia is 11142220 -> 0xaa044c)
-// Celo Sepolia Chain ID: 11142220 -> 0xaa044c
-const CELO_SEPOLIA_CHAIN_ID = '0xaa044c';
+// Celo Mainnet Chain ID: 42220 -> 0xa4ec
+const CELO_MAINNET_CHAIN_ID = '0xa4ec';
 
-const SEPOLIA_PARAMS = {
-  chainId: CELO_SEPOLIA_CHAIN_ID,
-  chainName: 'Celo Sepolia Testnet',
+const CELO_MAINNET_PARAMS = {
+  chainId: CELO_MAINNET_CHAIN_ID,
+  chainName: 'Celo Mainnet',
   nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
-  rpcUrls: ['https://forno.celo-sepolia.celo-testnet.org'],
-  blockExplorerUrls: ['https://celo-sepolia.blockscout.com/'],
+  rpcUrls: ['https://forno.celo.org'],
+  blockExplorerUrls: ['https://explorer.celo.org/mainnet'],
 };
 
 const switchNetwork = async () => {
@@ -33,7 +32,7 @@ const switchNetwork = async () => {
   try {
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: CELO_SEPOLIA_CHAIN_ID }],
+      params: [{ chainId: CELO_MAINNET_CHAIN_ID }],
     });
   } catch (error: any) {
     // This error code indicates that the chain has not been added to MetaMask.
@@ -41,10 +40,10 @@ const switchNetwork = async () => {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [SEPOLIA_PARAMS],
+          params: [CELO_MAINNET_PARAMS],
         });
       } catch (addError) {
-        console.error("Failed to add Celo Sepolia network", addError);
+        console.error("Failed to add Celo Mainnet network", addError);
       }
     } else {
       console.error("Failed to switch network", error);
@@ -89,7 +88,7 @@ const waitForTransaction = async (txHash: string, maxAttempts = 30): Promise<boo
         } else {
           console.error("Transaction failed on-chain");
           console.error("Full receipt:", JSON.stringify(receipt, null, 2));
-          console.error("Check transaction on explorer: https://celo-sepolia.blockscout.com/tx/" + txHash);
+          console.error("Check transaction on explorer: https://explorer.celo.org/mainnet/tx/" + txHash);
           return false;
         }
       }
@@ -202,7 +201,7 @@ export const checkBalance = async (address: string): Promise<string> => {
     try {
       // Debug: Check Chain ID
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (chainId !== CELO_SEPOLIA_CHAIN_ID) {
+      if (chainId !== CELO_MAINNET_CHAIN_ID) {
         await switchNetwork();
       }
 
