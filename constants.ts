@@ -10,7 +10,7 @@ export const HOST_ADDRESS = '0xE627De60e620269Af48412e462F587621430949A'; // Exa
 export const STAKE_AMOUNT = '0.1'; // 0.1 cUSD
 
 // The deployed contract address - uses environment variable in production
-export const CONTRACT_ADDRESS = "0xc1453adf0d0a3c340609177b3145e0B5B786011e";
+export const CONTRACT_ADDRESS = "0xBE8738a25fBCf5EC3D46E08CE4B98032288CE9bF";
 
 export const ERC20_ABI = [
   "function approve(address spender, uint256 amount) returns (bool)",
